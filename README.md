@@ -29,8 +29,7 @@ payload := []byte(`{
   "discountable": 0
 }`)
 
-	app, _ := request.New(url, "application/json", "", payload, nil)
-	resp, _ := app.POST()
+	app, _ := request.New(url, "application/json", "", payload, nil) resp, _ := app.POST()
 	log.Println(string(resp.Body))
 ```
 
@@ -45,9 +44,9 @@ import "github.com/muhfaris/request"
 url := "https://jsonplaceholder.typicode.com/posts"
 
 pq := request.ParamQuery{
-    "userId":1
+    "userId":"1"
 }
 app, _ := request.New(url, "application/json", "", "", pq )
 resp, _ := app.GET()
-log.Println(string(resp)
+log.Println(string(resp.Body))
 ```

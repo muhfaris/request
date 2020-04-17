@@ -12,7 +12,7 @@ import (
 )
 
 // ParamQuery for querystring
-type ParamQuery map[string]interface{}
+type ParamQuery map[string]string
 
 // ReqApp is request application
 type ReqApp struct {
@@ -123,7 +123,7 @@ func buildQuery(request *http.Request, querystring ParamQuery) *http.Request {
 
 	q := request.URL.Query()
 	for k, v := range querystring {
-		q.Add(k, v.(string))
+		q.Add(k, v)
 	}
 
 	request.URL.RawQuery = q.Encode()

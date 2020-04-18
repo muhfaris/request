@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,13 +13,22 @@ import (
 // ParamQuery for querystring
 type ParamQuery map[string]string
 
+// ToParamQuery convert from other type to paramQuery type
+func ToParamQuery(params interface{}) ParamQuery {
+	var paramQuery ParamQuery
+	for k, v := range params.(map[string]string) {
+		paramQuery[k] = v
+	}
+	return paramQuery
+}
+
 // ReqApp is request application
 type ReqApp struct {
 	URL           string
 	ContentType   string
 	Body          []byte
 	Authorization string
-	QueryString   ParamQuery
+	QueryString   map[string]string
 
 	httpClient http.Client
 }
@@ -34,12 +42,10 @@ type ReqResponse struct {
 // HTTPClient is interface
 type HTTPClient interface {
 	Do(req *http.Request) (resp *http.Response, err error)
-	Get(url string) (resp *http.Response, err error)
-	Post(url string, bodyType string, body io.Reader) (resp *http.Response, err error)
 }
 
 // New is initialize
-func New(url, ct, au string, body interface{}, qs ParamQuery) (*ReqApp, error) {
+func New(url, ct, au string, body interface{}, qs map[string]string) (*ReqApp, error) {
 	b, err := validationBody(body)
 	if err != nil {
 		return nil, err
@@ -85,8 +91,6 @@ func (app *ReqApp) GET() (*ReqResponse, error) {
 
 // POST is request
 func (app *ReqApp) POST() (*ReqResponse, error) {
-	log.Println(app.URL)
-	log.Println(string(app.Body))
 	request, err := http.NewRequest(http.MethodPost, app.URL, bytes.NewBuffer(app.Body))
 	if err != nil {
 		return nil, err
@@ -116,7 +120,7 @@ func (app *ReqApp) PATCH() (*ReqResponse, error) {
 	return app.send(request)
 }
 
-func buildQuery(request *http.Request, querystring ParamQuery) *http.Request {
+func buildQuery(request *http.Request, querystring map[string]string) *http.Request {
 	if querystring == nil {
 		return request
 	}

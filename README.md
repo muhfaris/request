@@ -34,7 +34,7 @@ resp, _ := app.POST()
 log.Println(string(resp.Body))
 ```
 
-#### Konvert body data
+#### Convert body data
 ```
 body := request.BodyByte(exampleStruct)
 ```

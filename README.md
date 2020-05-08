@@ -29,8 +29,9 @@ payload := []byte(`{
   "discountable": 0
 }`)
 
-	app, _ := request.New(url, "application/json", "", payload, nil) resp, _ := app.POST()
-	log.Println(string(resp.Body))
+app, _ := request.New(url, "application/json", "", payload, nil)
+resp, _ := app.POST()
+log.Println(string(resp.Body))
 ```
 
 #### Konvert body data

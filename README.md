@@ -45,9 +45,32 @@ import "github.com/muhfaris/request"
 url := "https://jsonplaceholder.typicode.com/posts"
 
 pq := request.ParamQuery{
-    "userId":"1"
+    "userId":"1",
 }
+
 app, _ := request.New(url, "application/json", "", "", pq )
+resp, _ := app.GET()
+log.Println(string(resp.Body))
+```
+
+#### Request Get dengan Query string dan custom header
+```
+import "github.com/muhfaris/request"
+
+url := "https://jsonplaceholder.typicode.com/posts"
+
+app := request.ReqApp{
+	URL:         url,
+	ContentType: "application/json",
+	Headers: request.CustomHeader{
+		"x-api-key": "somekeyhere123",
+	},
+	Authorization: "sometoken",
+	QueryString: request.ParamQuery{
+		"userId": "1",
+	},
+}
+
 resp, _ := app.GET()
 log.Println(string(resp.Body))
 ```

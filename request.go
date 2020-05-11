@@ -2,13 +2,12 @@ package request
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"reflect"
 )
+
+// CustomHeader is custom header
+type CustomHeader map[string]string
 
 // ParamQuery for querystring
 type ParamQuery map[string]string
@@ -29,53 +28,9 @@ type ReqApp struct {
 	Body          []byte
 	Authorization string
 	QueryString   map[string]string
+	Headers       CustomHeader
 
 	httpClient http.Client
-}
-
-// ReqResponse is response request
-type ReqResponse struct {
-	Response *http.Response
-	Body     []byte
-}
-
-// HTTPClient is interface
-type HTTPClient interface {
-	Do(req *http.Request) (resp *http.Response, err error)
-}
-
-// New is initialize
-func New(url, ct, au string, body interface{}, qs map[string]string) (*ReqApp, error) {
-	b, err := validationBody(body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ReqApp{
-		URL:           url,
-		ContentType:   ct,
-		Body:          b,
-		Authorization: au,
-		QueryString:   qs,
-	}, nil
-}
-
-func validationBody(body interface{}) ([]byte, error) {
-	r := reflect.TypeOf(body)
-	log.Println(r.Kind())
-	if r.Kind() == reflect.Uint8 || r.Kind() == reflect.Slice {
-		return body.([]byte), nil
-	}
-	return BodyByte(body)
-}
-
-// BodyByte is build body data to byte
-func BodyByte(data interface{}) ([]byte, error) {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return nil, fmt.Errorf("Error BodyByte:%v", err)
-	}
-	return b, nil
 }
 
 // GET is request
@@ -85,7 +40,12 @@ func (app *ReqApp) GET() (*ReqResponse, error) {
 		return nil, err
 	}
 
+	if app.Headers != nil {
+		request = buildHeader(request, app.Headers)
+	}
+
 	request = buildQuery(request, app.QueryString)
+
 	return app.send(request)
 }
 
@@ -96,8 +56,11 @@ func (app *ReqApp) POST() (*ReqResponse, error) {
 		return nil, err
 	}
 
-	return app.send(request)
+	if app.Headers != nil {
+		request = buildHeader(request, app.Headers)
+	}
 
+	return app.send(request)
 }
 
 // DELETE is request
@@ -105,6 +68,10 @@ func (app *ReqApp) DELETE() (*ReqResponse, error) {
 	request, err := http.NewRequest(http.MethodDelete, app.URL, bytes.NewBuffer(app.Body))
 	if err != nil {
 		return nil, err
+	}
+
+	if app.Headers != nil {
+		request = buildHeader(request, app.Headers)
 	}
 
 	return app.send(request)
@@ -117,21 +84,11 @@ func (app *ReqApp) PATCH() (*ReqResponse, error) {
 		return nil, err
 	}
 
+	if app.Headers != nil {
+		request = buildHeader(request, app.Headers)
+	}
+
 	return app.send(request)
-}
-
-func buildQuery(request *http.Request, querystring map[string]string) *http.Request {
-	if querystring == nil {
-		return request
-	}
-
-	q := request.URL.Query()
-	for k, v := range querystring {
-		q.Add(k, v)
-	}
-
-	request.URL.RawQuery = q.Encode()
-	return request
 }
 
 func (app *ReqApp) send(r *http.Request) (*ReqResponse, error) {
@@ -156,5 +113,33 @@ func (app *ReqApp) send(r *http.Request) (*ReqResponse, error) {
 	return &ReqResponse{
 		Body:     data,
 		Response: resp,
+	}, nil
+}
+
+// ReqResponse is response request
+type ReqResponse struct {
+	Response *http.Response
+	Body     []byte
+}
+
+// HTTPClient is interface
+type HTTPClient interface {
+	Do(req *http.Request) (resp *http.Response, err error)
+}
+
+// New is initialize
+func New(url, contentType, authorization string, body interface{}, query map[string]string, headers CustomHeader) (*ReqApp, error) {
+	b, err := validationBody(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ReqApp{
+		URL:           url,
+		ContentType:   contentType,
+		Body:          b,
+		Authorization: authorization,
+		QueryString:   query,
+		Headers:       headers,
 	}, nil
 }

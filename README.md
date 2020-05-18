@@ -1,9 +1,23 @@
 # Request
 ## Deskripsi
-Library sederhana untuk http request. Saat ini library hanya support untuk request GET, POST, DELETE dan PATCH.
+Library yang memudahkan kita untuk membuat http request lebih mudah.
 
-### Contoh
-#### Request Post dengan data
+## Konten
+- [Install](https://github.com/muhfaris/request#install)
+- [Penggunaan](https://github.com/muhfaris/request#penggunaan)
+  - [Request GET, POST, Delete](https://github.com/muhfaris/request#request-post)
+  - [Request dengan Authorization dan custom header Header](https://github.com/muhfaris/request#request-get-dengan-query-string-dan-custom-header)
+- [Mime Types](https://github.com/muhfaris/request#mime-types)
+
+## Install
+Untuk menggunakan paket request, Anda harus menginstall Go dan setup Go workspace.
+- Install paket, jalankan perintah berikut
+`go get github.com/muhfaris/request`
+- Import ke dalam kode:
+`import "github.com/muhfaris/request"`
+
+## Penggunaan
+### Request POST
 ```
 import "github.com/muhfaris/request"
 
@@ -29,17 +43,15 @@ payload := []byte(`{
   "discountable": 0
 }`)
 
-app, _ := request.New(url, "application/json", "", payload, nil)
+req := request.ReqApp{
+    URL:url,
+    ContentType: request.MimeTypeJSON,
+    Body:payload,
+}
 resp, _ := app.POST()
 log.Println(string(resp.Body))
 ```
-
-#### Convert body data
-```
-body := request.BodyByte(exampleStruct)
-```
-
-#### Request Get dengan Query string
+### Request GET
 ```
 import "github.com/muhfaris/request"
 url := "https://jsonplaceholder.typicode.com/posts"
@@ -47,9 +59,14 @@ url := "https://jsonplaceholder.typicode.com/posts"
 pq := request.ParamQuery{
     "userId":"1",
 }
-
-app, _ := request.New(url, "application/json", "", "", pq )
-resp, _ := app.GET()
+req := request.ReqApp{
+    URL:url,
+    ContentType:request.MimeTypeJSON,
+    ParamQuery:request.ParamQuery{
+    "userId":"1",
+    }
+}
+resp, _ := req.GET()
 log.Println(string(resp.Body))
 ```
 
@@ -74,3 +91,7 @@ app := request.ReqApp{
 resp, _ := app.GET()
 log.Println(string(resp.Body))
 ```
+## Mime Types
+- MimeTypeJSON = "application/json"
+- MimeTypeFormData = "multipart/form-data"
+- MimeTypeFormUrl = "application/x-www-form-urlencoded"

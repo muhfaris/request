@@ -62,9 +62,9 @@ pq := request.ParamQuery{
 req := request.ReqApp{
     URL:url,
     ContentType:request.MimeTypeJSON,
-    ParamQuery:request.ParamQuery{
+    QueryString:request.ParamQuery{
     "userId":"1",
-    }
+    },
 }
 resp, _ := req.GET()
 log.Println(string(resp.Body))
@@ -91,7 +91,7 @@ app := request.ReqApp{
 resp, _ := app.GET()
 log.Println(string(resp.Body))
 ```
-## Mime Types
-- MimeTypeJSON = "application/json"
-- MimeTypeFormData = "multipart/form-data"
-- MimeTypeFormUrl = "application/x-www-form-urlencoded"
+## Mime Types Support
+- MimeTypeJSON = `application/json`
+- MimeTypeFormData = `multipart/form-data`
+- MimeTypeFormUrl = `application/x-www-form-urlencoded`

@@ -2,6 +2,7 @@ package request
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -31,6 +32,42 @@ type ReqApp struct {
 	Headers       CustomHeader
 
 	httpClient http.Client
+}
+
+func (ra *ReqApp) ChangeURL(url string) error {
+	if url == "" {
+		return fmt.Errorf("url is empty")
+	}
+
+	ra.URL = url
+	return nil
+}
+
+func (ra *ReqApp) ChangeBody(body []byte) error {
+	if body == nil {
+		return fmt.Errorf("body data is empty")
+	}
+
+	ra.Body = body
+	return nil
+}
+
+func (ra *ReqApp) ChangeAuthorization(authorization string) error {
+	if authorization == "" {
+		return fmt.Errorf("authorization is empty")
+	}
+
+	ra.Authorization = authorization
+	return nil
+}
+
+func (ra *ReqApp) ChangeHeaders(headers CustomHeader) error {
+	if headers == nil {
+		return fmt.Errorf("authorization is empty")
+	}
+
+	ra.Headers = headers
+	return nil
 }
 
 // GET is request

@@ -148,15 +148,15 @@ func (app *ReqApp) send(r *http.Request) (*ReqResponse, error) {
 	}
 
 	return &ReqResponse{
-		Body:     data,
-		Response: resp,
+		HTTP: resp,
+		Body: data,
 	}, nil
 }
 
 // ReqResponse is response request
 type ReqResponse struct {
-	Response *http.Response
-	Body     []byte
+	HTTP *http.Response
+	Body []byte
 }
 
 // HTTPClient is interface

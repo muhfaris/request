@@ -11,7 +11,7 @@ import (
 func BodyByte(data interface{}) ([]byte, error) {
 	b, err := json.Marshal(data)
 	if err != nil {
-		return nil, fmt.Errorf("Error BodyByte:%v", err)
+		return nil, fmt.Errorf("request: error marshal data, %v", err)
 	}
 	return b, nil
 }

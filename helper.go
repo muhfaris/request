@@ -16,7 +16,7 @@ func BodyByte(data interface{}) ([]byte, error) {
 	return b, nil
 }
 
-func buildHeader(r *http.Request, headers CustomHeader) *http.Request {
+func buildHeader(r *http.Request, headers Header) *http.Request {
 	for key, value := range headers {
 		r.Header.Set(key, value)
 	}

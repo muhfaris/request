@@ -2,181 +2,152 @@ package request
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
-// CustomHeader is custom header
-type CustomHeader map[string]string
+// Header is custom header
+type Header map[string]string
 
-// ParamQuery for querystring
-type ParamQuery map[string]string
+// Query for querystring
+type Query map[string]string
 
-// ToParamQuery convert from other type to paramQuery type
-func ToParamQuery(params interface{}) ParamQuery {
-	var paramQuery ParamQuery
+// ToQuery convert from other type to paramQuery type
+func ToQuery(params interface{}) Query {
+	var paramQuery Query
 	for k, v := range params.(map[string]string) {
 		paramQuery[k] = v
 	}
 	return paramQuery
 }
 
-// ReqApp is request application
-type ReqApp struct {
-	URL           string
-	ContentType   string
-	Body          []byte
-	Authorization string
-	QueryString   map[string]string
-	Headers       CustomHeader
-
-	httpClient http.Client
-}
-
-func (ra *ReqApp) ChangeURL(url string) error {
-	if url == "" {
-		return fmt.Errorf("url is empty")
-	}
-
-	ra.URL = url
-	return nil
-}
-
-func (ra *ReqApp) ChangeBody(body []byte) error {
-	if body == nil {
-		return fmt.Errorf("body data is empty")
-	}
-
-	ra.Body = body
-	return nil
-}
-
-func (ra *ReqApp) ChangeAuthorization(authorization string) error {
-	if authorization == "" {
-		return fmt.Errorf("authorization is empty")
-	}
-
-	ra.Authorization = authorization
-	return nil
-}
-
-func (ra *ReqApp) ChangeHeaders(headers CustomHeader) error {
-	if headers == nil {
-		return fmt.Errorf("authorization is empty")
-	}
-
-	ra.Headers = headers
-	return nil
-}
-
 // GET is request
-func (app *ReqApp) GET() (*ReqResponse, error) {
-	request, err := http.NewRequest(http.MethodGet, app.URL, nil)
+func (c *Config) Get() *Response {
+	request, err := http.NewRequest(http.MethodGet, c.URL, nil)
 	if err != nil {
-		return nil, err
+		return &Response{Error: &ErrorResponse{Err: err, Description: "error initialize client request"}}
 	}
 
-	if app.Headers != nil {
-		request = buildHeader(request, app.Headers)
+	if c.Headers != nil {
+		request = buildHeader(request, c.Headers)
 	}
 
-	request = buildQuery(request, app.QueryString)
+	request = buildQuery(request, c.QueryString)
 
-	return app.send(request)
+	return c.send(request)
 }
 
 // POST is request
-func (app *ReqApp) POST() (*ReqResponse, error) {
-	request, err := http.NewRequest(http.MethodPost, app.URL, bytes.NewBuffer(app.Body))
+func (c *Config) Post() *Response {
+	request, err := http.NewRequest(http.MethodPost, c.URL, bytes.NewBuffer(c.Body))
 	if err != nil {
-		return nil, err
+		return &Response{Error: &ErrorResponse{Err: err, Description: "error initialize client request"}}
 	}
 
-	if app.Headers != nil {
-		request = buildHeader(request, app.Headers)
+	if c.Headers != nil {
+		request = buildHeader(request, c.Headers)
 	}
 
-	return app.send(request)
+	return c.send(request)
 }
 
 // DELETE is request
-func (app *ReqApp) DELETE() (*ReqResponse, error) {
-	request, err := http.NewRequest(http.MethodDelete, app.URL, bytes.NewBuffer(app.Body))
+func (c *Config) Delete() *Response {
+	request, err := http.NewRequest(http.MethodDelete, c.URL, bytes.NewBuffer(c.Body))
 	if err != nil {
-		return nil, err
+		return &Response{Error: &ErrorResponse{Err: err, Description: "error initialize client request"}}
 	}
 
-	if app.Headers != nil {
-		request = buildHeader(request, app.Headers)
+	if c.Headers != nil {
+		request = buildHeader(request, c.Headers)
 	}
 
-	return app.send(request)
+	return c.send(request)
 }
 
 // PATCH is request
-func (app *ReqApp) PATCH() (*ReqResponse, error) {
-	request, err := http.NewRequest(http.MethodPatch, app.URL, bytes.NewBuffer(app.Body))
+func (c *Config) Patch() *Response {
+	request, err := http.NewRequest(http.MethodPatch, c.URL, bytes.NewBuffer(c.Body))
 	if err != nil {
-		return nil, err
+		return &Response{Error: &ErrorResponse{Err: err, Description: "error initialize client request"}}
 	}
 
-	if app.Headers != nil {
-		request = buildHeader(request, app.Headers)
+	if c.Headers != nil {
+		request = buildHeader(request, c.Headers)
 	}
 
-	return app.send(request)
+	return c.send(request)
 }
 
-func (app *ReqApp) send(r *http.Request) (*ReqResponse, error) {
-	r.Header.Set("content-type", app.ContentType)
+func (c *Config) send(r *http.Request) *Response {
+	for {
+		r.Header.Set("content-type", c.ContentType)
 
-	// check authorization
-	if app.Authorization != "" {
-		r.Header.Add("Authorization", app.Authorization)
+		// check authorization
+		if c.Authorization != "" {
+			r.Header.Add("Authorization", c.Authorization)
+		}
+
+		resp, err := c.httpClient.Do(r)
+		// case retry
+		if c.onRetry() {
+			// if success
+			if err == nil {
+				defer resp.Body.Close()
+				data, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					return &Response{Error: &ErrorResponse{Err: err, Description: "error read response data"}}
+				}
+
+				// Restore the io.ReadCloser to its original state
+				resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+				return &Response{Detail: resp, Body: data}
+			}
+
+			// if error
+			select {
+			case <-r.Context().Done():
+				return &Response{Error: &ErrorResponse{Err: r.Context().Err(), Description: "context is done"}}
+
+			case <-time.After(time.Duration(c.Delay)):
+				c.Retry--
+			}
+
+			continue
+		}
+
+		if err != nil {
+			return &Response{Error: &ErrorResponse{Err: err, Description: "error can not reach server"}}
+		}
+
+		defer resp.Body.Close()
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return &Response{Error: &ErrorResponse{Err: err, Description: "error read response data"}}
+		}
+
+		// Restore the io.ReadCloser to its original state
+		resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+		return &Response{Detail: resp, Body: data}
 	}
-
-	resp, err := app.httpClient.Do(r)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ReqResponse{
-		HTTP: resp,
-		Body: data,
-	}, nil
 }
 
-// ReqResponse is response request
-type ReqResponse struct {
-	HTTP *http.Response
-	Body []byte
+// Params is wrap query string
+func (c *Config) Params(params map[string]string) *Config {
+	if len(params) == 0 {
+		return c
+	}
+	c.QueryString = params
+	return c
+}
+
+// onRetry is check the request use retry mechanism
+func (c *Config) onRetry() bool {
+	return c.Retry > 0
 }
 
 // HTTPClient is interface
 type HTTPClient interface {
 	Do(req *http.Request) (resp *http.Response, err error)
-}
-
-// New is initialize
-func New(url, contentType, authorization string, body interface{}, query map[string]string, headers CustomHeader) (*ReqApp, error) {
-	b, err := validationBody(body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ReqApp{
-		URL:           url,
-		ContentType:   contentType,
-		Body:          b,
-		Authorization: authorization,
-		QueryString:   query,
-		Headers:       headers,
-	}, nil
 }

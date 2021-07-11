@@ -13,6 +13,9 @@
 ### Docs
 - add example post request
 
+### Feat
+- add changelog config (git-chglog)
+
 ### Fix
 - golang linter
 

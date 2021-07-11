@@ -27,7 +27,7 @@ type Person struct{
 func main(){
     var person = &Person{}
     resp, err := request.Get(
-        request.Config{
+        &request.Config{
                 "URL": "http://<domain_api>",
         }).Parse(&person)
 
@@ -44,13 +44,45 @@ func main(){
 
 ## Post request dengan retry
 ```
-resp, err := request.Get(
-    request.Config{
-        "URL": "https://facebook.com/v1/api/profile",
-        "Method": "POST",
-        "Retry": 1, 
-        "Delay": 10 * time.Seconds,
-    },
-)
+import "github.com/muhfaris/request"
+func main(){
+    resp, err := request.Post(
+        &request.Config{
+            "URL": "https://facebook.com/v1/api/profile",
+            "Method": "POST",
+            "Retry": 1, 
+            "Delay": 10 * time.Seconds,
+        },
+    )
+}
+```
+
+## Post application/json
+```
+
+func main(){
+    body, _ := BodyByte(
+            map[string]string{
+                    "name": "faris",
+                    "job":  "leader",
+            },
+    )
+
+    // wrap response to map string  
+    var data map[string]interface{}
+    resp := request.Post(
+        &request.Config{
+            URL:  "https://reqres.in/api/users",
+            Body: body,
+        }).Parse(&data)
+
+    // handle error
+    if resp.Error != nil {
+        // TODO Error
+    }
+
+    fmt.Println(data["id"])
+}
+
 
 ```

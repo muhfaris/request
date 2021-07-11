@@ -212,8 +212,8 @@ func TestPatch(t *testing.T) {
 				},
 			)
 			// preparation
-			tt.args.config.ChangeBody(body)
-			tt.args.config.ChangeURL(fmt.Sprintf("%s/%s", tt.args.config.URL, data["id"]))
+			_ = tt.args.config.ChangeBody(body)
+			_ = tt.args.config.ChangeURL(fmt.Sprintf("%s/%s", tt.args.config.URL, data["id"]))
 
 			got = Patch(tt.args.config).Parse(&update)
 			assert.Nil(t, got.Error)

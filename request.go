@@ -15,7 +15,7 @@ type Query map[string]string
 
 // ToQuery convert from other type to paramQuery type
 func ToQuery(params interface{}) Query {
-	var paramQuery Query
+	var paramQuery = Query{}
 	for k, v := range params.(map[string]string) {
 		paramQuery[k] = v
 	}
@@ -110,7 +110,7 @@ func (c *Config) send(r *http.Request) *Response {
 			case <-r.Context().Done():
 				return &Response{Error: &ErrorResponse{Err: r.Context().Err(), Description: "context is done"}}
 
-			case <-time.After(time.Duration(c.Delay)):
+			case <-time.After(c.Delay):
 				c.Retry--
 			}
 
@@ -131,20 +131,6 @@ func (c *Config) send(r *http.Request) *Response {
 		resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
 		return &Response{Detail: resp, Body: data}
 	}
-}
-
-// Params is wrap query string
-func (c *Config) Params(params map[string]string) *Config {
-	if len(params) == 0 {
-		return c
-	}
-	c.QueryString = params
-	return c
-}
-
-// onRetry is check the request use retry mechanism
-func (c *Config) onRetry() bool {
-	return c.Retry > 0
 }
 
 // HTTPClient is interface

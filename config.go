@@ -4,6 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
+)
+
+var (
+	defaultRetryDelay = 1 * time.Second
 )
 
 // Config is request application
@@ -17,25 +22,25 @@ type Config struct {
 
 	// Retry
 	Retry int
-	Delay int
+	Delay time.Duration
 
 	httpClient http.Client
 }
 
 // New is initialize
 func New() *Config {
-	return &Config{ContentType: MimeTypeJSON}
+	return &Config{ContentType: MimeTypeJSON, Delay: defaultRetryDelay}
 }
 
 func (c *Config) reinit(config *Config) *Config {
-	c.ChangeURL(config.URL)
-	c.ChangeContentType(config.ContentType)
-	c.ChangeBody(config.Body)
-	c.ChangeAuthorization(config.Authorization)
-	c.ChangeQueryString(config.QueryString)
-	c.ChangeHeaders(config.Headers)
-	c.ChangeRetry(config.Retry)
-	c.ChangeDelay(config.Delay)
+	_ = c.ChangeURL(config.URL)
+	_ = c.ChangeContentType(config.ContentType)
+	_ = c.ChangeBody(config.Body)
+	_ = c.ChangeAuthorization(config.Authorization)
+	_ = c.ChangeQueryString(config.QueryString)
+	_ = c.ChangeHeaders(config.Headers)
+	_ = c.ChangeRetry(config.Retry)
+	_ = c.ChangeDelay(config.Delay)
 	return c
 }
 
@@ -58,12 +63,17 @@ func (c *Config) ChangeContentType(contentType string) error {
 }
 
 // ChangeBody is change body
-func (c *Config) ChangeBody(body []byte) error {
+func (c *Config) ChangeBody(body interface{}) error {
 	if body == nil {
 		return fmt.Errorf("body data is empty")
 	}
 
-	c.Body = body
+	b, err := validationBody(body)
+	if err != nil {
+		return err
+	}
+
+	c.Body = b
 	return nil
 }
 
@@ -108,11 +118,25 @@ func (c *Config) ChangeRetry(retry int) error {
 }
 
 // ChangeDelay is change delay Retry
-func (c *Config) ChangeDelay(delay int) error {
+func (c *Config) ChangeDelay(delay time.Duration) error {
 	if delay == 0 {
 		return fmt.Errorf("error missing argument of delay retry")
 	}
 
 	c.Delay = delay
 	return nil
+}
+
+// Params is wrap query string
+func (c *Config) Params(params map[string]string) *Config {
+	if len(params) == 0 {
+		return c
+	}
+	c.QueryString = params
+	return c
+}
+
+// onRetry is check the request use retry mechanism
+func (c *Config) onRetry() bool {
+	return c.Retry > 0
 }

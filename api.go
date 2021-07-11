@@ -2,11 +2,6 @@ package request
 
 import (
 	"errors"
-	"time"
-)
-
-var (
-	defaultRetryDelay = 1 * time.Second
 )
 
 // Get is request api with get method

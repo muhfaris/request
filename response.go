@@ -20,8 +20,17 @@ type ErrorResponse struct {
 
 // Parse from response data to pointer
 func (r *Response) Parse(data interface{}) *Response {
+	if r.Body == nil {
+		return r
+	}
+
 	err := json.Unmarshal(r.Body, data)
 	if err != nil {
+		if r.Error == nil {
+			r.Error = &ErrorResponse{err, "error parse response data to pointer variable"}
+			return r
+		}
+
 		r.Error.Err = err
 		r.Error.Description = "error parse response data to pointer variable"
 	}

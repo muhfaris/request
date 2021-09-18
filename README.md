@@ -17,28 +17,33 @@ Untuk menggunakan paket request, Anda harus menginstall Go dan setup Go workspac
 
 ## Get Request dan parse response data ke struct
 ```
-import "github.com/muhfaris/request"
+package main
 
-type Person struct{
-    Name string
-    Address string
+import (
+	"log"
+
+	"github.com/muhfaris/request"
+)
+
+type QuoteModel struct {
+	Anime     string
+	Character string
+	Quote     string
 }
 
-func main(){
-    var person = &Person{}
-    resp, err := request.Get(
-        &request.Config{
-                "URL": "http://<domain_api>",
-        }).Parse(&person)
+func main() {
+	var quoteModel QuoteModel
+	config := &request.Config{URL: "https://animechan.vercel.app/api/random"}
+	response := request.Get(config).Parse(&quoteModel)
+	if response.Error != nil {
+		log.Printf("error get quote anime, %v", response.Error)
+		return
+	}
 
-    // handler response
-    if resp.Error != nil {
-
-    }
-
-
-    fmt.Println(person.Name)
-    fmt.Println(person.Address)
+	log.Println("Quote:>")
+	log.Println(quoteModel.Anime)
+	log.Println(quoteModel.Character)
+	log.Println(quoteModel.Quote)
 }
 ```
 
@@ -60,29 +65,44 @@ func main(){
 ## Post application/json
 ```
 
-func main(){
-    body, _ := BodyByte(
-            map[string]string{
-                    "name": "faris",
-                    "job":  "leader",
-            },
-    )
+package main
 
-    // wrap response to map string  
-    var data map[string]interface{}
-    resp := request.Post(
-        &request.Config{
-            URL:  "https://reqres.in/api/users",
-            Body: body,
-        }).Parse(&data)
+import (
+	"encoding/json"
+	"log"
 
-    // handle error
-    if resp.Error != nil {
-        // TODO Error
-    }
+	"github.com/muhfaris/request"
+)
 
-    fmt.Println(data["id"])
+type User struct {
+	Name string
+	Job  string
 }
 
+func main() {
+	user := User{
+		Name: "faris",
+		Job:  "software developer",
+	}
 
+	raw, err := json.Marshal(user)
+	if err != nil {
+		log.Printf("error marshal the user data, %v", err)
+		return
+	}
+
+	config := &request.Config{
+		URL:  "https://reqres.in/api/users",
+		Body: raw,
+	}
+
+	resp := request.Post(config)
+	if resp.Error != nil {
+		log.Printf("error create new post user, %v", resp.Error)
+		return
+	}
+
+	log.Println("Resp")
+	log.Println(string(resp.Body))
+}
 ```

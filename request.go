@@ -83,6 +83,10 @@ func (c *Config) Patch() *Response {
 func (c *Config) send(r *http.Request) *Response {
 	for {
 		r.Header.Set("content-type", c.ContentType)
+		// set user agent
+		if c.UserAgent != "" {
+			r.Header.Set("User-Agent", c.UserAgent)
+		}
 
 		// check authorization
 		if c.Authorization != "" {

@@ -6,6 +6,7 @@ Library yang memudahkan kita untuk membuat http request lebih mudah.
 - Request dengan method Get, Post, Delete, Patch.
 - Sistem retry, untuk melakukan request ulang jika terjadi error. Kamu bisa set total retry pada field `Retry` dan kamu juga bisa melakukan setting jeda waktu antar request yang satu dengan yang lain.
 - Parse response data ke struct / map[string].
+- custom user agent
 
 ## Install
 Untuk menggunakan paket request, Anda harus menginstall Go dan setup Go workspace.

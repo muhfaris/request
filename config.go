@@ -24,6 +24,9 @@ type Config struct {
 	Retry int
 	Delay time.Duration
 
+	// UserAgent
+	UserAgent string
+
 	httpClient http.Client
 }
 
@@ -41,6 +44,7 @@ func (c *Config) reinit(config *Config) *Config {
 	_ = c.ChangeHeaders(config.Headers)
 	_ = c.ChangeRetry(config.Retry)
 	_ = c.ChangeDelay(config.Delay)
+	_ = c.ChangeUserAgent(config.UserAgent)
 	return c
 }
 
@@ -124,6 +128,16 @@ func (c *Config) ChangeDelay(delay time.Duration) error {
 	}
 
 	c.Delay = delay
+	return nil
+}
+
+// ChangeUserAgent is change user agent request
+func (c *Config) ChangeUserAgent(userAgent string) error {
+	if userAgent == "" {
+		return fmt.Errorf("error user agent is empty")
+	}
+
+	c.UserAgent = userAgent
 	return nil
 }
 

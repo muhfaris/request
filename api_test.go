@@ -45,6 +45,18 @@ func TestGet(t *testing.T) {
 			assert.NotEqual(t, "", anime.Character)
 			assert.NotEqual(t, "", anime.Quote)
 		})
+
+		t.Run(tt.name, func(t *testing.T) {
+			var anime = Anime{}
+			got := tt.args.config.Get().Parse(&anime)
+
+			assert.NotEqual(t, nil, got.Error)
+			assert.NotNil(t, got.Body)
+			assert.NotNil(t, got.Detail.Body)
+			assert.NotEqual(t, "", anime.Anime)
+			assert.NotEqual(t, "", anime.Character)
+			assert.NotEqual(t, "", anime.Quote)
+		})
 	}
 }
 
@@ -69,8 +81,9 @@ func TestPost(t *testing.T) {
 			name: "create new user",
 			args: args{
 				config: &Config{
-					URL:  "https://reqres.in/api/users",
-					Body: body,
+					URL:         "https://reqres.in/api/users",
+					Body:        body,
+					ContentType: MimeTypeJSON,
 				},
 			},
 		},
@@ -89,6 +102,20 @@ func TestPost(t *testing.T) {
 			assert.NotEmpty(t, data["job"])
 
 		})
+
+		t.Run(tt.name, func(t *testing.T) {
+			var data map[string]interface{}
+			got := tt.args.config.Post().Parse(&data)
+
+			assert.Nil(t, got.Error)
+			assert.NotNil(t, got.Body)
+			assert.NotNil(t, got.Detail.Body)
+			assert.NotEmpty(t, data["id"])
+			assert.NotEmpty(t, data["name"])
+			assert.NotEmpty(t, data["job"])
+
+		})
+
 	}
 }
 
@@ -130,6 +157,16 @@ func TestPostForm(t *testing.T) {
 			assert.NotNil(t, got.Detail.Body)
 			assert.NotEmpty(t, data["form"])
 		})
+
+		t.Run(tt.name, func(t *testing.T) {
+			var data map[string]interface{}
+			got := tt.args.config.Post().Parse(&data)
+
+			assert.Nil(t, got.Error)
+			assert.NotNil(t, got.Body)
+			assert.NotNil(t, got.Detail.Body)
+			assert.NotEmpty(t, data["form"])
+		})
 	}
 }
 
@@ -160,6 +197,14 @@ func TestDelete(t *testing.T) {
 			assert.Nil(t, got.Error)
 			assert.Equal(t, http.StatusNoContent, got.Detail.StatusCode)
 		})
+
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.args.config.Delete()
+
+			assert.Nil(t, got.Error)
+			assert.Equal(t, http.StatusNoContent, got.Detail.StatusCode)
+		})
+
 	}
 }
 
@@ -184,8 +229,9 @@ func TestPatch(t *testing.T) {
 			name: "patch: create and then update the user",
 			args: args{
 				config: &Config{
-					URL:  "https://reqres.in/api/users",
-					Body: body,
+					URL:         "https://reqres.in/api/users",
+					Body:        body,
+					ContentType: MimeTypeJSON,
 				},
 			},
 		},
@@ -195,6 +241,37 @@ func TestPatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var data map[string]interface{}
 			got := Post(tt.args.config).Parse(&data)
+
+			assert.Nil(t, got.Error)
+			assert.NotNil(t, got.Body)
+			assert.NotNil(t, got.Detail.Body)
+			assert.NotEmpty(t, data["id"])
+			assert.NotEmpty(t, data["name"])
+			assert.NotEmpty(t, data["job"])
+
+			// change job to programmer
+			var update map[string]interface{}
+			body, _ := BodyByte(
+				map[string]string{
+					"name": "faris",
+					"job":  "programmer",
+				},
+			)
+			// preparation
+			_ = tt.args.config.ChangeBody(body)
+			_ = tt.args.config.ChangeURL(fmt.Sprintf("%s/%s", tt.args.config.URL, data["id"]))
+
+			got = Patch(tt.args.config).Parse(&update)
+			assert.Nil(t, got.Error)
+			assert.NotNil(t, got.Body)
+			assert.NotNil(t, got.Detail.Body)
+			assert.Equal(t, data["name"], update["name"])
+			assert.Equal(t, "programmer", update["job"])
+		})
+
+		t.Run(tt.name, func(t *testing.T) {
+			var data map[string]interface{}
+			got := tt.args.config.Post().Parse(&data)
 
 			assert.Nil(t, got.Error)
 			assert.NotNil(t, got.Body)

@@ -3,7 +3,7 @@
 Library yang memudahkan kita untuk membuat http request lebih mudah.
 
 ## Fitur
-- Request dengan method Get, Post, Delete, Patch.
+- Request dengan method Get, Post, Delete, Patch, Put.
 - Sistem retry, untuk melakukan request ulang jika terjadi error. Kamu bisa set total retry pada field `Retry` dan kamu juga bisa melakukan setting jeda waktu antar request yang satu dengan yang lain.
 - Parse response data ke struct / map[string].
 - custom user agent
@@ -51,6 +51,7 @@ func main() {
 ## Post request dengan retry
 ```
 import "github.com/muhfaris/request"
+
 func main(){
     resp, err := request.Post(
         &request.Config{
@@ -65,7 +66,6 @@ func main(){
 
 ## Post application/json
 ```
-
 package main
 
 import (
@@ -95,9 +95,57 @@ func main() {
 	config := &request.Config{
 		URL:  "https://reqres.in/api/users",
 		Body: raw,
+		ContentType: "application/json",
 	}
 
 	resp := request.Post(config)
+	if resp.Error != nil {
+		log.Printf("error create new post user, %v", resp.Error)
+		return
+	}
+
+	log.Println("Resp")
+	log.Println(string(resp.Body))
+}
+```
+
+
+Another Example:
+
+```
+package main
+
+import (
+	"encoding/json"
+	"log"
+
+	"github.com/muhfaris/request"
+)
+
+type User struct {
+	Name string
+	Job  string
+}
+
+func main() {
+	user := User{
+		Name: "faris",
+		Job:  "software developer",
+	}
+
+	raw, err := json.Marshal(user)
+	if err != nil {
+		log.Printf("error marshal the user data, %v", err)
+		return
+	}
+
+	config := &request.Config{
+		URL:         "https://reqres.in/api/users",
+		Body:        raw,
+		ContentType: "application/json",
+	}
+
+	resp := config.Post()
 	if resp.Error != nil {
 		log.Printf("error create new post user, %v", resp.Error)
 		return

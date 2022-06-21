@@ -25,8 +25,9 @@ func main() {
 	}
 
 	config := &request.Config{
-		URL:  "https://reqres.in/api/users",
-		Body: raw,
+		URL:         "https://reqres.in/api/users",
+		Body:        raw,
+		ContentType: "application/json",
 	}
 
 	resp := request.Post(config)

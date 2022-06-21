@@ -25,9 +25,15 @@ func ToQuery(params interface{}) Query {
 
 // GET is request
 func (c *Config) Get() *Response {
-	request, err := http.NewRequest(http.MethodGet, c.URL, nil)
+	var res *Response
+
+	if err := c.setMethod(http.MethodGet); err != nil {
+		return res.setError(err)
+	}
+
+	request, err := c.newRequest()
 	if err != nil {
-		return &Response{Error: &ErrorResponse{Err: err, Description: "error initialize client request"}}
+		return res.setError(err)
 	}
 
 	if c.Headers != nil {
@@ -41,9 +47,15 @@ func (c *Config) Get() *Response {
 
 // POST is request
 func (c *Config) Post() *Response {
-	request, err := http.NewRequest(http.MethodPost, c.URL, bytes.NewBuffer(c.Body))
+	var res *Response
+
+	if err := c.setMethod(http.MethodPost); err != nil {
+		return res.setError(err)
+	}
+
+	request, err := c.newRequest()
 	if err != nil {
-		return &Response{Error: &ErrorResponse{Err: err, Description: "error initialize client request"}}
+		return res.setError(err)
 	}
 
 	if c.Headers != nil {
@@ -55,9 +67,15 @@ func (c *Config) Post() *Response {
 
 // DELETE is request
 func (c *Config) Delete() *Response {
-	request, err := http.NewRequest(http.MethodDelete, c.URL, bytes.NewBuffer(c.Body))
+	var res *Response
+
+	if err := c.setMethod(http.MethodDelete); err != nil {
+		return res.setError(err)
+	}
+
+	request, err := c.newRequest()
 	if err != nil {
-		return &Response{Error: &ErrorResponse{Err: err, Description: "error initialize client request"}}
+		return res.setError(err)
 	}
 
 	if c.Headers != nil {
@@ -69,9 +87,35 @@ func (c *Config) Delete() *Response {
 
 // PATCH is request
 func (c *Config) Patch() *Response {
-	request, err := http.NewRequest(http.MethodPatch, c.URL, bytes.NewBuffer(c.Body))
+	var res *Response
+
+	if err := c.setMethod(http.MethodPatch); err != nil {
+		return res.setError(err)
+	}
+
+	request, err := c.newRequest()
 	if err != nil {
-		return &Response{Error: &ErrorResponse{Err: err, Description: "error initialize client request"}}
+		return res.setError(err)
+	}
+
+	if c.Headers != nil {
+		request = buildHeader(request, c.Headers)
+	}
+
+	return c.send(request)
+}
+
+// Put is request
+func (c *Config) Put() *Response {
+	var res *Response
+
+	if err := c.setMethod(http.MethodPut); err != nil {
+		return res.setError(err)
+	}
+
+	request, err := c.newRequest()
+	if err != nil {
+		return res.setError(err)
 	}
 
 	if c.Headers != nil {
@@ -82,16 +126,18 @@ func (c *Config) Patch() *Response {
 }
 
 func (c *Config) send(r *http.Request) *Response {
+	var res *Response
+
 	for {
-		r.Header.Set("content-type", c.ContentType)
+		r.Header.Set(string(ContentTypeHeader), c.ContentType)
 		// set user agent
 		if c.UserAgent != "" {
-			r.Header.Set("User-Agent", c.UserAgent)
+			r.Header.Set(string(UserAgentHeader), c.UserAgent)
 		}
 
 		// check authorization
 		if c.Authorization != "" {
-			r.Header.Add("Authorization", c.Authorization)
+			r.Header.Add(string(AuthorizationHeader), c.Authorization)
 		}
 
 		resp, err := c.httpClient.Do(r)
@@ -102,7 +148,7 @@ func (c *Config) send(r *http.Request) *Response {
 				defer resp.Body.Close()
 				data, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
-					return &Response{Error: &ErrorResponse{Err: err, Description: "error read response data"}}
+					return res.setError(err).setErrorDesc(ErrReadData.Error())
 				}
 
 				// Restore the io.ReadCloser to its original state
@@ -113,7 +159,7 @@ func (c *Config) send(r *http.Request) *Response {
 			// if error
 			select {
 			case <-r.Context().Done():
-				return &Response{Error: &ErrorResponse{Err: r.Context().Err(), Description: "context is done"}}
+				return res.setError(err).setErrorDesc(ErrContextDone.Error())
 
 			case <-time.After(c.Delay):
 				c.Retry--
@@ -123,17 +169,18 @@ func (c *Config) send(r *http.Request) *Response {
 		}
 
 		if err != nil {
-			return &Response{Error: &ErrorResponse{Err: err, Description: "error can not reach server"}}
+			return res.setError(err).setErrorDesc(ErrServer.Error())
 		}
 
 		defer resp.Body.Close()
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return &Response{Error: &ErrorResponse{Err: err, Description: "error read response data"}}
+			return res.setError(err).setErrorDesc(ErrReadData.Error())
 		}
 
 		if resp.StatusCode > 300 {
-			return &Response{Error: &ErrorResponse{Err: errors.New(http.StatusText(resp.StatusCode)), Description: http.StatusText(resp.StatusCode)}}
+			err := errors.New(http.StatusText(resp.StatusCode))
+			return res.setError(err)
 		}
 
 		// Restore the io.ReadCloser to its original state

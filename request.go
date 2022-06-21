@@ -2,6 +2,7 @@ package request
 
 import (
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -129,6 +130,10 @@ func (c *Config) send(r *http.Request) *Response {
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return &Response{Error: &ErrorResponse{Err: err, Description: "error read response data"}}
+		}
+
+		if resp.StatusCode > 300 {
+			return &Response{Error: &ErrorResponse{Err: errors.New(http.StatusText(resp.StatusCode)), Description: http.StatusText(resp.StatusCode)}}
 		}
 
 		// Restore the io.ReadCloser to its original state

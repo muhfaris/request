@@ -30,7 +30,7 @@ func main() {
 		ContentType: "application/json",
 	}
 
-	resp := request.Post(config)
+	resp := config.Post()
 	if resp.Error != nil {
 		log.Printf("error create new post user, %v", resp.Error)
 		return

@@ -43,19 +43,6 @@ func New() *Config {
 	return &Config{ContentType: MimeTypeJSON, Delay: defaultRetryDelay}
 }
 
-func (c *Config) reinit(config *Config) *Config {
-	_ = c.ChangeURL(config.URL)
-	_ = c.ChangeContentType(config.ContentType)
-	_ = c.ChangeBody(config.Body)
-	_ = c.ChangeAuthorization(config.Authorization)
-	_ = c.ChangeQueryString(config.QueryString)
-	_ = c.ChangeHeaders(config.Headers)
-	_ = c.ChangeRetry(config.Retry)
-	_ = c.ChangeDelay(config.Delay)
-	_ = c.ChangeUserAgent(config.UserAgent)
-	return c
-}
-
 func (c *Config) ChangeURL(url string) error {
 	if url == "" {
 		return fmt.Errorf("url is empty")

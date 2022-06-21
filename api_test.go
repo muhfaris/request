@@ -125,8 +125,8 @@ func TestPostForm(t *testing.T) {
 	}
 
 	data := url.Values{
-		"name":       {"John Doe"},
-		"occupation": {"gardener"},
+		"name":       []string{"John Doe"},
+		"occupation": []string{"gardener"},
 	}
 	body, _ := BodyByte(data)
 

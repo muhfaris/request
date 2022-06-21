@@ -1,6 +1,8 @@
 package request
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,6 +14,10 @@ var (
 )
 
 // Config is request application
+//
+// Retry Mechanism
+// You can implementation retry mechanism,
+// set the retry and set delay as interval time for distance to the next request
 type Config struct {
 	URL           string
 	ContentType   string
@@ -28,24 +34,13 @@ type Config struct {
 	UserAgent string
 
 	httpClient http.Client
+	method     string
+	Context    *context.Context
 }
 
 // New is initialize
 func New() *Config {
 	return &Config{ContentType: MimeTypeJSON, Delay: defaultRetryDelay}
-}
-
-func (c *Config) reinit(config *Config) *Config {
-	_ = c.ChangeURL(config.URL)
-	_ = c.ChangeContentType(config.ContentType)
-	_ = c.ChangeBody(config.Body)
-	_ = c.ChangeAuthorization(config.Authorization)
-	_ = c.ChangeQueryString(config.QueryString)
-	_ = c.ChangeHeaders(config.Headers)
-	_ = c.ChangeRetry(config.Retry)
-	_ = c.ChangeDelay(config.Delay)
-	_ = c.ChangeUserAgent(config.UserAgent)
-	return c
 }
 
 func (c *Config) ChangeURL(url string) error {
@@ -153,4 +148,41 @@ func (c *Config) Params(params map[string]string) *Config {
 // onRetry is check the request use retry mechanism
 func (c *Config) onRetry() bool {
 	return c.Retry > 0
+}
+
+// validate is validate the config request
+func (c *Config) validate() *Response {
+	var res *Response
+
+	if c == nil {
+		err := &ResponseError{
+			Err:         ErrConfig,
+			Description: ErrValidate.Error(),
+		}
+
+		res.Error = err
+	}
+
+	return nil
+}
+
+// newRequest is create initialize request
+// default the context is background
+func (c *Config) newRequest() (*http.Request, error) {
+	payload := bytes.NewBuffer(c.Body)
+
+	if c.Context != nil {
+		return http.NewRequestWithContext(*c.Context, c.method, c.URL, payload)
+	}
+
+	return http.NewRequest(c.method, c.URL, payload)
+}
+
+func (c *Config) setMethod(method string) error {
+	if method == "" {
+		return ErrMethod
+	}
+
+	c.method = method
+	return nil
 }
